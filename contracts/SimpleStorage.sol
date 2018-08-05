@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 contract SimpleStorage {
-  uint storedData;
+  uint public storedData = 0;
 
   function set(uint x) public {
     storedData = x;
