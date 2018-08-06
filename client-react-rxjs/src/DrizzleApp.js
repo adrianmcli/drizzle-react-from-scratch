@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import { Observable, Subject } from "rxjs";
-import { distinctUntilChanged } from "rxjs/operators";
+import { Subject } from "rxjs";
+import DrizzleObservableHelper from "./DrizzleObservableHelper";
 
 class DrizzleApp extends Component {
   state = { inputValue: "", value: null, status: null };
@@ -8,50 +8,48 @@ class DrizzleApp extends Component {
   async componentDidMount() {
     const { drizzle } = this.props;
     const accounts = await drizzle.web3.eth.getAccounts();
+    const txParams = { from: accounts[0] };
 
-    this.value$ = new Observable(observer => {
-      const dataKey = drizzle.contracts.SimpleStorage.methods.storedData.cacheCall();
-      drizzle.store.subscribe(() => {
-        const drizzleState = drizzle.store.getState();
-        const watchedData =
-          drizzleState.contracts.SimpleStorage.storedData[dataKey];
-        if (watchedData !== undefined) {
-          observer.next(watchedData.value);
-        }
-      });
-    });
+    // Instantiate class and helper functions
+    const observableHelper = new DrizzleObservableHelper(drizzle);
+    const { createCallObservable, createSendObservable } = observableHelper;
 
-    this.value$
-      .pipe(distinctUntilChanged())
-      .subscribe(x => this.setState({ value: x }));
-
+    // Create subject to track user's intention to set a new value
     this.setValue$ = new Subject();
 
-    this.tx$ = new Observable(observer => {
-      this.setValue$.subscribe(x => {
-        const { SimpleStorage } = drizzle.contracts;
-        const stackId = SimpleStorage.methods.set.cacheSend(x, {
-          from: accounts[0]
-        });
-        drizzle.store.subscribe(() => {
-          const drizzleState = drizzle.store.getState();
-          const txHash = drizzleState.transactionStack[stackId];
-          if (txHash) {
-            const status = drizzleState.transactions[txHash].status;
-            observer.next(status);
-          }
-        });
-      });
-    });
+    // Create an observable that watches for changes in the stored data
+    const value$ = createCallObservable("SimpleStorage", "storedData");
 
-    this.tx$
-      .pipe(distinctUntilChanged())
-      .subscribe(x => this.setState({ status: x }));
+    // Create an observable that tracks the tx status of calling the "set"
+    // method with the input stream being the setValue$ created above
+    const txStatus$ = createSendObservable(
+      "SimpleStorage",
+      "set",
+      this.setValue$,
+      txParams
+    );
+
+    // Subscribe to updates for the value and tx status
+    this.sub1 = value$.subscribe(value => {
+      console.log(value);
+      this.setState({ value });
+    });
+    this.sub2 = txStatus$.subscribe(status => {
+      console.log(status);
+      this.setState({ status });
+    });
+  }
+
+  componentWillUnmount() {
+    this.sub1.unsubscribe();
+    this.sub2.unsubscribe();
   }
 
   handleInputChange = e => this.setState({ inputValue: e.target.value });
 
-  setValue = () => this.setValue$.next(this.state.inputValue);
+  // Note that we put the value in an array because the cacheSend call can
+  // accept multiple arguments
+  setValue = () => this.setValue$.next([this.state.inputValue]);
 
   render() {
     const { value, status } = this.state;
