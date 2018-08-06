@@ -1,4 +1,4 @@
-import { Observable } from "rxjs";
+import { Observable, from } from "rxjs";
 import {
   distinctUntilChanged,
   withLatestFrom,
@@ -13,12 +13,13 @@ export default class DrizzleObservableHelper {
 
     // create an observable that emits an event every time the drizzle store
     // updates its state
-    this.state$ = new Observable(observer =>
-      this.drizzle.store.subscribe(() => {
+    this.state$ = new Observable(observer => {
+      const unsubscribe = this.drizzle.store.subscribe(() => {
         const state = this.drizzle.store.getState();
         observer.next(state);
-      })
-    );
+      });
+      return unsubscribe;
+    });
   }
 
   createCallObservable = (contractName, methodName, ...args) => {
