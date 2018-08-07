@@ -9,12 +9,16 @@ class App extends Component {
     const { drizzle } = this.props;
 
     // watch for changes in the store, update state when ready
-    drizzle.store.subscribe(() => {
+    this.unsubscribe = drizzle.store.subscribe(() => {
       const drizzleState = drizzle.store.getState();
       if (drizzleState.drizzleStatus.initialized) {
         this.setState({ loading: false, drizzleState });
       }
     });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe();
   }
 
   render() {
