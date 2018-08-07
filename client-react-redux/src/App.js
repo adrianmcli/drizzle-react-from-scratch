@@ -1,27 +1,25 @@
-import React, { Component } from "react";
+import React from "react";
 import { drizzleConnect } from "drizzle-react";
 import "./App.css";
 
-import DrizzleApp from "./DrizzleApp";
+import ReadValue from "./components/ReadValue";
+import SetValue from "./components/SetValue";
 
-class MyApp extends Component {
-  render() {
-    const { drizzleStatus } = this.props;
-    if (!drizzleStatus.initialized) return "Loading Drizzle...";
-    return (
-      <div className="App">
-        <DrizzleApp />
-      </div>
-    );
+const App = ({ drizzleStatus }) => {
+  // wait for drizzle to be initialized before showing app
+  if (!drizzleStatus.initialized) {
+    return "Loading Drizzle...";
   }
-}
-
-const mapStateToProps = state => {
-  return {
-    drizzleStatus: state.drizzleStatus
-  };
+  return (
+    <div className="App">
+      <ReadValue />
+      <SetValue />
+    </div>
+  );
 };
 
-const App = drizzleConnect(MyApp, mapStateToProps);
+const mapStateToProps = state => ({ drizzleStatus: state.drizzleStatus });
 
-export default App;
+const AppContainer = drizzleConnect(App, mapStateToProps);
+
+export default AppContainer;
