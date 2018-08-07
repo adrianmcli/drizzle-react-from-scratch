@@ -1,38 +1,27 @@
-import React, { Component } from "react";
+import React from "react";
 import "./App.css";
-import DrizzleApp from "./DrizzleApp";
 
-class App extends Component {
-  state = { loading: true, intervalId: null };
+import DrizzleLoader from "./DrizzleLoader";
+import ReadValue from "./components/ReadValue";
+import SetValue from "./components/SetValue";
 
-  componentDidMount() {
-    const { drizzle } = this.props;
+// How to use DrizzleLoader:
+// 1. pass in the drizzle instance as a prop
+// 2. tell the component what to render when drizzle is not yet ready
+// 3. drizzle is ready, here is the drizzle state as an observable
+//    for you to use in your components
 
-    // every second, check if the drizzle store is ready
-    const intervalId = setInterval(() => {
-      const drizzleState = drizzle.store.getState();
-      if (drizzleState.drizzleStatus.initialized) {
-        this.setState({ loading: false }, this.clearInterval);
-      }
-    }, 1000);
-
-    this.setState({ intervalId });
-  }
-
-  componentWillUnmount() {
-    this.clearInterval();
-  }
-
-  clearInterval = () => clearInterval(this.state.intervalId);
-
-  render() {
-    if (this.state.loading) return "Loading Drizzle...";
-    return (
+const App = ({ drizzle }) => (
+  <DrizzleLoader
+    drizzle={drizzle}
+    renderLoading={() => <div>Loading Drizzle...</div>}
+    render={({ drizzleState$ }) => (
       <div className="App">
-        <DrizzleApp drizzle={this.props.drizzle} />
+        <ReadValue drizzle={drizzle} drizzleState$={drizzleState$} />
+        <SetValue drizzle={drizzle} drizzleState$={drizzleState$} />
       </div>
-    );
-  }
-}
+    )}
+  />
+);
 
 export default App;

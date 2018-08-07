@@ -1,4 +1,4 @@
-import { Observable, from } from "rxjs";
+import { Observable } from "rxjs";
 import {
   distinctUntilChanged,
   withLatestFrom,
@@ -7,29 +7,18 @@ import {
   shareReplay
 } from "rxjs/operators";
 
-export default class DrizzleObservableHelper {
-  constructor(drizzle) {
+export default class DrizzleHelper {
+  constructor(drizzle, drizzleState$) {
     this.drizzle = drizzle;
-
-    // create an observable that emits an event every time the drizzle store
-    // updates its state
-    this.state$ = new Observable(observer => {
-      const unsubscribe = this.drizzle.store.subscribe(() => {
-        const state = this.drizzle.store.getState();
-        observer.next(state);
-      });
-      return unsubscribe;
-    });
+    this.drizzleState$ = drizzleState$;
   }
 
   createCallObservable = (contractName, methodName, ...args) => {
     const contract = this.drizzle.contracts[contractName];
     const dataKey = contract.methods[methodName].cacheCall(...args);
 
-    // for every state change, check if our value has changed,
-    // if so, then update the observer
     const handler = observer =>
-      this.state$
+      this.drizzleState$
         .pipe(
           map(state => state.contracts[contractName][methodName][dataKey]),
           filter(data => data !== undefined),
@@ -54,7 +43,7 @@ export default class DrizzleObservableHelper {
     // for every state change, check the status of our tx with the latest
     // stack id, if there is a change then update the observer
     const handler = observer =>
-      this.state$
+      this.drizzleState$
         .pipe(
           withLatestFrom(stackId$),
           map(([state, stackId]) => {
