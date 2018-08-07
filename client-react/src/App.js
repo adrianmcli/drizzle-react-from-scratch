@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import "./App.css";
-import DrizzleApp from "./DrizzleApp";
+
+import ReadValue from "./components/ReadValue";
+import SetValue from "./components/SetValue";
 
 class App extends Component {
   state = { loading: true, drizzleState: null };
@@ -8,7 +10,7 @@ class App extends Component {
   componentDidMount() {
     const { drizzle } = this.props;
 
-    // watch for changes in the store, update state when ready
+    // subscribe to changes in the store, keep state up-to-date
     this.unsubscribe = drizzle.store.subscribe(() => {
       const drizzleState = drizzle.store.getState();
       if (drizzleState.drizzleStatus.initialized) {
@@ -22,11 +24,15 @@ class App extends Component {
   }
 
   render() {
-    // wait till drizzle is ready before loading app
+    // wait for drizzle to be initialized before showing app
     if (this.state.loading) return "Loading Drizzle...";
     return (
       <div className="App">
-        <DrizzleApp
+        <ReadValue
+          drizzle={this.props.drizzle}
+          drizzleState={this.state.drizzleState}
+        />
+        <SetValue
           drizzle={this.props.drizzle}
           drizzleState={this.state.drizzleState}
         />
