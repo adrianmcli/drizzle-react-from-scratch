@@ -3,33 +3,29 @@ import "./App.css";
 import DrizzleApp from "./DrizzleApp";
 
 class App extends Component {
-  state = { loading: true, intervalId: null };
+  state = { loading: true, drizzleState: null };
 
   componentDidMount() {
     const { drizzle } = this.props;
 
-    // every second, check if the drizzle store is ready
-    const intervalId = setInterval(() => {
+    // watch for changes in the store, update state when ready
+    drizzle.store.subscribe(() => {
       const drizzleState = drizzle.store.getState();
       if (drizzleState.drizzleStatus.initialized) {
-        this.setState({ loading: false }, this.clearInterval);
+        this.setState({ loading: false, drizzleState });
       }
-    }, 1000);
-
-    this.setState({ intervalId });
+    });
   }
-
-  componentWillUnmount() {
-    this.clearInterval();
-  }
-
-  clearInterval = () => clearInterval(this.state.intervalId);
 
   render() {
+    // wait till drizzle is ready before loading app
     if (this.state.loading) return "Loading Drizzle...";
     return (
       <div className="App">
-        <DrizzleApp drizzle={this.props.drizzle} />
+        <DrizzleApp
+          drizzle={this.props.drizzle}
+          drizzleState={this.state.drizzleState}
+        />
       </div>
     );
   }

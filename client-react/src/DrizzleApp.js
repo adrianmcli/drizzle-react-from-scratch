@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 
 class DrizzleApp extends Component {
-  state = { drizzleState: null, dataKey: null, stackId: null, inputValue: "" };
+  state = { dataKey: null, stackId: null, inputValue: "" };
 
   handleInputChange = e => {
     this.setState({ inputValue: e.target.value });
@@ -9,34 +9,30 @@ class DrizzleApp extends Component {
 
   componentDidMount() {
     const { drizzle } = this.props;
-
-    // watch for state changes
-    drizzle.store.subscribe((a, b) => {
-      const drizzleState = drizzle.store.getState();
-      this.setState({ drizzleState });
-    });
+    const contract = drizzle.contracts.SimpleStorage;
 
     // get and save the key for the variable we are interested in
-    const dataKey = drizzle.contracts.SimpleStorage.methods.storedData.cacheCall();
+    const dataKey = contract.methods["storedData"].cacheCall();
     this.setState({ dataKey });
   }
 
   setValue = async () => {
     const { drizzle } = this.props;
     const accounts = await drizzle.web3.eth.getAccounts();
-    // Declare this transaction to be observed. We'll receive the stackId for reference.
-    const stackId = drizzle.contracts.SimpleStorage.methods.set.cacheSend(
-      this.state.inputValue,
-      {
-        from: accounts[0]
-      }
-    );
+    const contract = drizzle.contracts.SimpleStorage;
+
+    // call the "set" method with the inputValue
+    // we get a stack id as a reference to the transaction
+    const stackId = contract.methods["set"].cacheSend(this.state.inputValue, {
+      from: accounts[0]
+    });
 
     this.setState({ stackId });
   };
 
   renderTxStatus = () => {
-    const { drizzleState, stackId } = this.state;
+    const { drizzleState } = this.props;
+    const { stackId } = this.state;
 
     // status is not yet tracked
     if (!drizzleState.transactionStack[stackId]) return null;
@@ -51,15 +47,14 @@ class DrizzleApp extends Component {
   };
 
   render() {
-    const { drizzleState, dataKey } = this.state;
-    if (!drizzleState) return "loading drizzle state...";
-    if (!drizzleState.contracts.SimpleStorage.storedData[dataKey])
-      return "waiting for subscription...";
-    const value =
-      drizzleState.contracts.SimpleStorage.storedData[dataKey].value;
+    const { dataKey } = this.state;
+    const { drizzleState } = this.props;
+    const contract = drizzleState.contracts.SimpleStorage;
+
+    if (!contract.storedData[dataKey]) return "waiting for subscription...";
     return (
       <div>
-        <p>My stored value: {value}</p>
+        <p>My stored value: {contract.storedData[dataKey].value}</p>
         <p>
           <input
             type="text"
