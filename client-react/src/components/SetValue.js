@@ -27,7 +27,7 @@ export default class SetValue extends React.Component {
     if (transactionStack[stackId] === undefined) return null;
 
     const txHash = transactionStack[stackId];
-    return `Transaction status: ${transactions[txHash].status}`;
+    return `Transaction status: ${txHash && transactions[txHash].status}`;
   };
 
   render() {
