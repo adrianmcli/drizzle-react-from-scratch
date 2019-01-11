@@ -3,12 +3,19 @@ import React from "react";
 export default class ReadValue extends React.Component {
   state = { dataKey: null };
 
-  componentDidMount() {
-    const { drizzle } = this.props;
+  async componentDidMount() {
+    const { drizzle, drizzleState } = this.props;
     const contract = drizzle.contracts.SimpleStorage;
 
+    await window.ethereum.enable()
+
+    const accounts = await drizzle.web3.eth.getAccounts();
+    console.log(accounts)
+    console.log(drizzle)
+    console.log(drizzleState)
+
     // get and save the key for the variable we are interested in
-    const dataKey = contract.methods["storedData"].cacheCall();
+    const dataKey = contract.methods["storedData"].cacheCall({ from: accounts[0] });
     this.setState({ dataKey });
   }
 
